@@ -9,52 +9,60 @@
         * {
             box-sizing: border-box;
             touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding: 16px;
+            padding: 2vw;
             background: #f5f5f5;
-            max-width: 400px;
-            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
         }
         .display {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
+            border-radius: 2vw;
+            padding: 2.5vw 3vw;
+            margin-bottom: 2vw;
             text-align: right;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         }
         .amount {
-            font-size: 48px;
+            font-size: clamp(24px, 7vw, 36px);
             font-weight: bold;
             color: #333;
         }
         .amount::after {
             content: ' ฿';
-            font-size: 24px;
+            font-size: clamp(14px, 4vw, 20px);
             color: #888;
         }
         .keypad {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 1.5vw;
+            flex: 1;
         }
         .key {
             background: white;
             border: none;
-            border-radius: 12px;
-            padding: 24px;
-            font-size: 28px;
+            border-radius: 2vw;
+            font-size: clamp(16px, 5vw, 24px);
             font-weight: 500;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.1s, background 0.1s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .key:active {
-            transform: scale(0.95);
             background: #eee;
+            transform: scale(0.95);
         }
         .key.clear {
             background: #ff6b6b;
@@ -63,17 +71,19 @@
         .key.send {
             background: #06C755;
             color: white;
-            grid-column: span 2;
+            grid-row: span 2;
         }
         .key:disabled {
             background: #ccc;
-            cursor: not-allowed;
         }
         .error {
             color: #ff6b6b;
             text-align: center;
-            margin-top: 16px;
-            display: none;
+            font-size: clamp(10px, 3vw, 14px);
+            height: 4vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -86,20 +96,21 @@
         <button class="key" onclick="append('7')">7</button>
         <button class="key" onclick="append('8')">8</button>
         <button class="key" onclick="append('9')">9</button>
+        <button class="key" onclick="backspace()">⌫</button>
         <button class="key" onclick="append('4')">4</button>
         <button class="key" onclick="append('5')">5</button>
         <button class="key" onclick="append('6')">6</button>
+        <button class="key clear" onclick="clearAmount()">C</button>
         <button class="key" onclick="append('1')">1</button>
         <button class="key" onclick="append('2')">2</button>
         <button class="key" onclick="append('3')">3</button>
-        <button class="key" onclick="append('.')">.</button>
-        <button class="key" onclick="append('0')">0</button>
-        <button class="key clear" onclick="clearAmount()">C</button>
         <button class="key send" id="sendBtn" onclick="send()">Send</button>
-        <button class="key" onclick="backspace()">⌫</button>
+        <button class="key" onclick="append('0')">0</button>
+        <button class="key" onclick="append('00')">00</button>
+        <button class="key" onclick="append('.')">.</button>
     </div>
 
-    <p class="error" id="error"></p>
+    <div class="error" id="error"></div>
 
     <script>
         const LIFF_ID = "2008821815-lUW2FsbY";
@@ -108,11 +119,9 @@
         async function initLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                }
+                if (!liff.isLoggedIn()) liff.login();
             } catch (error) {
-                showError("LIFF init error: " + error.message);
+                showError("LIFF init error");
             }
         }
 
@@ -123,16 +132,9 @@
         }
 
         function append(num) {
-            // Prevent multiple decimal points
-            if (num === '.' && amount.includes('.')) {
-                return;
-            }
-            // Limit decimal places to 2
-            if (amount.includes('.') && amount.split('.')[1]?.length >= 2) {
-                return;
-            }
-            
-            if (amount === "0" && num !== '.') {
+            if (num === '.' && amount.includes('.')) return;
+            if (amount.includes('.') && amount.split('.')[1]?.length >= 2) return;
+            if (amount === "0" && num !== '.' && num !== '00') {
                 amount = num;
             } else if (amount.length < 10) {
                 amount += num;
@@ -146,11 +148,7 @@
         }
 
         function backspace() {
-            if (amount.length > 1) {
-                amount = amount.slice(0, -1);
-            } else {
-                amount = "0";
-            }
+            amount = amount.length > 1 ? amount.slice(0, -1) : "0";
             updateDisplay();
         }
 
@@ -159,10 +157,9 @@
                 showError("Please enter an amount");
                 return;
             }
-
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
-            btn.textContent = "Sending...";
+            btn.textContent = "...";
 
             try {
                 if (!liff.isInClient()) {
@@ -171,15 +168,10 @@
                     btn.textContent = "Send";
                     return;
                 }
-
-                await liff.sendMessages([{
-                    type: "text",
-                    text: amount
-                }]);
-
+                await liff.sendMessages([{ type: "text", text: amount }]);
                 liff.closeWindow();
             } catch (error) {
-                showError("Send error: " + error.message);
+                showError("Send error");
                 btn.disabled = false;
                 btn.textContent = "Send";
             }
@@ -188,8 +180,7 @@
         function showError(msg) {
             const el = document.getElementById('error');
             el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
+            setTimeout(() => el.textContent = '', 3000);
         }
 
         initLiff();
