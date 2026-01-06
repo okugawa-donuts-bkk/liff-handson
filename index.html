@@ -92,7 +92,7 @@
         <button class="key" onclick="append('1')">1</button>
         <button class="key" onclick="append('2')">2</button>
         <button class="key" onclick="append('3')">3</button>
-        <button class="key" onclick="append('00')">00</button>
+        <button class="key" onclick="append('.')">.</button>
         <button class="key" onclick="append('0')">0</button>
         <button class="key clear" onclick="clearAmount()">C</button>
         <button class="key send" id="sendBtn" onclick="send()">Send</button>
@@ -117,14 +117,24 @@
         }
 
         function updateDisplay() {
-            const formatted = Number(amount).toLocaleString();
-            document.getElementById('amount').textContent = formatted;
+            const parts = amount.split('.');
+            parts[0] = Number(parts[0]).toLocaleString();
+            document.getElementById('amount').textContent = parts.join('.');
         }
 
         function append(num) {
-            if (amount === "0") {
+            // Prevent multiple decimal points
+            if (num === '.' && amount.includes('.')) {
+                return;
+            }
+            // Limit decimal places to 2
+            if (amount.includes('.') && amount.split('.')[1]?.length >= 2) {
+                return;
+            }
+            
+            if (amount === "0" && num !== '.') {
                 amount = num;
-            } else if (amount.length < 8) {
+            } else if (amount.length < 10) {
                 amount += num;
             }
             updateDisplay();
