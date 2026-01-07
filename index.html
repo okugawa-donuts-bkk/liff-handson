@@ -18,50 +18,36 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 2vw;
             background: #f5f5f5;
-            display: flex;
-            flex-direction: column;
         }
+        .page {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 2vw;
+        }
+        .page.active {
+            display: flex;
+        }
+
+        /* === PAGE 1: Calculator === */
         .display {
             background: white;
             border-radius: 2vw;
             padding: 2vw 3vw;
-            margin-bottom: 1.5vw;
+            margin-bottom: 2vw;
             text-align: right;
             box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         }
         .amount {
-            font-size: clamp(20px, 6vw, 32px);
+            font-size: clamp(24px, 7vw, 36px);
             font-weight: bold;
             color: #333;
         }
         .amount::after {
             content: ' ฿';
-            font-size: clamp(12px, 3.5vw, 18px);
+            font-size: clamp(14px, 4vw, 20px);
             color: #888;
-        }
-        .categories {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 1vw;
-            margin-bottom: 1.5vw;
-        }
-        .cat {
-            background: white;
-            border: 2px solid #eee;
-            border-radius: 2vw;
-            padding: 1.5vw;
-            font-size: clamp(16px, 5vw, 24px);
-            cursor: pointer;
-            text-align: center;
-        }
-        .cat.selected {
-            border-color: #06C755;
-            background: #e8f5e9;
-        }
-        .cat:active {
-            transform: scale(0.95);
         }
         .keypad {
             display: grid;
@@ -74,7 +60,7 @@
             background: white;
             border: none;
             border-radius: 2vw;
-            font-size: clamp(14px, 4.5vw, 22px);
+            font-size: clamp(16px, 5vw, 24px);
             font-weight: 500;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -90,17 +76,70 @@
             background: #ff6b6b;
             color: white;
         }
-        .key.send {
+        .key.next {
             background: #ccc;
             color: white;
             grid-row: span 2;
+            font-size: clamp(12px, 3.5vw, 16px);
         }
-        .key.send.ready {
+        .key.next.ready {
             background: #06C755;
         }
-        .key:disabled {
-            background: #ccc;
+
+        /* === PAGE 2: Categories === */
+        .page2-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2vw;
+            gap: 2vw;
         }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: clamp(14px, 4vw, 18px);
+            color: #06C755;
+            cursor: pointer;
+            padding: 1vw;
+        }
+        .selected-amount {
+            flex: 1;
+            text-align: right;
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: bold;
+            color: #333;
+        }
+        .selected-amount::after {
+            content: ' ฿';
+            font-size: clamp(12px, 3vw, 16px);
+            color: #888;
+        }
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1.5vw;
+            flex: 1;
+        }
+        .cat {
+            background: white;
+            border: none;
+            border-radius: 2vw;
+            font-size: clamp(20px, 6vw, 32px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .cat:active {
+            background: #e8f5e9;
+            transform: scale(0.95);
+        }
+        .cat:disabled {
+            opacity: 0.5;
+        }
+
+        /* === Common === */
         .error {
             color: #ff6b6b;
             text-align: center;
@@ -113,31 +152,40 @@
     </style>
 </head>
 <body>
-    <div class="display">
-        <div class="amount" id="amount">0</div>
+    <!-- PAGE 1: Calculator -->
+    <div class="page active" id="page1">
+        <div class="display">
+            <div class="amount" id="amount">0</div>
+        </div>
+        <div class="keypad">
+            <button class="key" onclick="append('7')">7</button>
+            <button class="key" onclick="append('8')">8</button>
+            <button class="key" onclick="append('9')">9</button>
+            <button class="key" onclick="backspace()">⌫</button>
+            <button class="key" onclick="append('4')">4</button>
+            <button class="key" onclick="append('5')">5</button>
+            <button class="key" onclick="append('6')">6</button>
+            <button class="key clear" onclick="clearAmount()">C</button>
+            <button class="key" onclick="append('1')">1</button>
+            <button class="key" onclick="append('2')">2</button>
+            <button class="key" onclick="append('3')">3</button>
+            <button class="key next" id="nextBtn" onclick="goToPage2()">Next →</button>
+            <button class="key" onclick="append('0')">0</button>
+            <button class="key" onclick="append('00')">00</button>
+            <button class="key" onclick="append('.')">.</button>
+        </div>
+        <div class="error" id="error1"></div>
     </div>
 
-    <div class="categories" id="categories"></div>
-
-    <div class="keypad">
-        <button class="key" onclick="append('7')">7</button>
-        <button class="key" onclick="append('8')">8</button>
-        <button class="key" onclick="append('9')">9</button>
-        <button class="key" onclick="backspace()">⌫</button>
-        <button class="key" onclick="append('4')">4</button>
-        <button class="key" onclick="append('5')">5</button>
-        <button class="key" onclick="append('6')">6</button>
-        <button class="key clear" onclick="clearAll()">C</button>
-        <button class="key" onclick="append('1')">1</button>
-        <button class="key" onclick="append('2')">2</button>
-        <button class="key" onclick="append('3')">3</button>
-        <button class="key send" id="sendBtn" onclick="send()">OK</button>
-        <button class="key" onclick="append('0')">0</button>
-        <button class="key" onclick="append('00')">00</button>
-        <button class="key" onclick="append('.')">.</button>
+    <!-- PAGE 2: Categories -->
+    <div class="page" id="page2">
+        <div class="page2-header">
+            <button class="back-btn" onclick="goToPage1()">← Back</button>
+            <div class="selected-amount" id="selectedAmount">0</div>
+        </div>
+        <div class="categories" id="categories"></div>
+        <div class="error" id="error2"></div>
     </div>
-
-    <div class="error" id="error"></div>
 
     <script>
         const LIFF_ID = "2008821815-lUW2FsbY";
@@ -147,17 +195,23 @@
             { emoji: "🐕", name: "Dog" },
             { emoji: "👶", name: "Baby" },
             { emoji: "🧹", name: "Daily Items" },
+            { emoji: "⛺️", name: "Hobby" },
             { emoji: "☕️", name: "Social" },
             { emoji: "🚃", name: "Transportation" },
             { emoji: "👕", name: "Clothing" },
             { emoji: "🏥", name: "Health" },
             { emoji: "🚙", name: "Car" },
+            { emoji: "🪑", name: "Home goods" },
             { emoji: "🎁", name: "Gift" },
-            { emoji: "❗️", name: "Special" }
+            { emoji: "❗️", name: "Special" },
+            { emoji: "🚰", name: "Utilities" },
+            { emoji: "🛜", name: "Internet" },
+            { emoji: "🏠", name: "Housing" },
+            { emoji: "💊", name: "Insurance" },
+            { emoji: "📱", name: "Subscription" }
         ];
 
         let amount = "0";
-        let selectedCategory = null;
 
         async function initLiff() {
             try {
@@ -166,7 +220,7 @@
                     liff.login();
                 }
             } catch (error) {
-                showError("LIFF init error");
+                showError(1, "LIFF init error");
             }
         }
 
@@ -177,25 +231,16 @@
             ).join('');
         }
 
-        function selectCategory(index) {
-            selectedCategory = CATEGORIES[index];
-            document.querySelectorAll('.cat').forEach((el, i) => {
-                el.classList.toggle('selected', i === index);
-            });
-            updateSendButton();
-        }
-
-        function updateSendButton() {
-            const btn = document.getElementById('sendBtn');
-            const ready = amount !== "0" && selectedCategory;
-            btn.classList.toggle('ready', ready);
+        function formatAmount(val) {
+            const parts = val.split('.');
+            parts[0] = Number(parts[0]).toLocaleString();
+            return parts.join('.');
         }
 
         function updateDisplay() {
-            const parts = amount.split('.');
-            parts[0] = Number(parts[0]).toLocaleString();
-            document.getElementById('amount').textContent = parts.join('.');
-            updateSendButton();
+            document.getElementById('amount').textContent = formatAmount(amount);
+            const btn = document.getElementById('nextBtn');
+            btn.classList.toggle('ready', amount !== "0");
         }
 
         function append(num) {
@@ -209,10 +254,8 @@
             updateDisplay();
         }
 
-        function clearAll() {
+        function clearAmount() {
             amount = "0";
-            selectedCategory = null;
-            document.querySelectorAll('.cat').forEach(el => el.classList.remove('selected'));
             updateDisplay();
         }
 
@@ -221,42 +264,45 @@
             updateDisplay();
         }
 
-        async function send() {
-            if (amount === "0") {
-                showError("Enter amount");
-                return;
-            }
-            if (!selectedCategory) {
-                showError("Select category");
-                return;
-            }
+        function goToPage1() {
+            document.getElementById('page1').classList.add('active');
+            document.getElementById('page2').classList.remove('active');
+        }
 
-            const btn = document.getElementById('sendBtn');
-            btn.disabled = true;
-            btn.textContent = "...";
+        function goToPage2() {
+            if (amount === "0") {
+                showError(1, "Enter amount");
+                return;
+            }
+            document.getElementById('selectedAmount').textContent = formatAmount(amount);
+            document.getElementById('page1').classList.remove('active');
+            document.getElementById('page2').classList.add('active');
+        }
+
+        async function selectCategory(index) {
+            const cat = CATEGORIES[index];
+
+            // Disable all buttons
+            document.querySelectorAll('.cat').forEach(el => el.disabled = true);
 
             try {
                 if (!liff.isInClient()) {
-                    showError("Open in LINE app");
-                    btn.disabled = false;
-                    btn.textContent = "OK";
+                    showError(2, "Open in LINE app");
+                    document.querySelectorAll('.cat').forEach(el => el.disabled = false);
                     return;
                 }
 
-                // Format: "amount|emoji name" (e.g., "1000|🍔 Food")
-                const message = `${amount}|${selectedCategory.emoji} ${selectedCategory.name}`;
-
+                const message = `${amount}|${cat.emoji} ${cat.name}`;
                 await liff.sendMessages([{ type: "text", text: message }]);
                 liff.closeWindow();
             } catch (error) {
-                showError("Send error");
-                btn.disabled = false;
-                btn.textContent = "OK";
+                showError(2, "Send error");
+                document.querySelectorAll('.cat').forEach(el => el.disabled = false);
             }
         }
 
-        function showError(msg) {
-            const el = document.getElementById('error');
+        function showError(page, msg) {
+            const el = document.getElementById(`error${page}`);
             el.textContent = msg;
             setTimeout(() => el.textContent = '', 3000);
         }
