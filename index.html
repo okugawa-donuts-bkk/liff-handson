@@ -115,20 +115,23 @@
         }
         .categories {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(3, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.5vw;
             flex: 1;
+            overflow-y: auto;
+            padding-bottom: 2vw;
         }
         .cat {
             background: white;
             border: none;
             border-radius: 2vw;
-            font-size: clamp(20px, 6vw, 32px);
+            padding: 2vw 1vw;
             cursor: pointer;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 0.5vw;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .cat:active {
@@ -137,6 +140,15 @@
         }
         .cat:disabled {
             opacity: 0.5;
+        }
+        .cat-emoji {
+            font-size: clamp(20px, 6vw, 28px);
+        }
+        .cat-name {
+            font-size: clamp(9px, 2.5vw, 12px);
+            color: #666;
+            text-align: center;
+            line-height: 1.2;
         }
 
         /* === Common === */
@@ -227,7 +239,10 @@
         function renderCategories() {
             const container = document.getElementById('categories');
             container.innerHTML = CATEGORIES.map((cat, i) =>
-                `<button class="cat" onclick="selectCategory(${i})">${cat.emoji}</button>`
+                `<button class="cat" onclick="selectCategory(${i})">
+                    <span class="cat-emoji">${cat.emoji}</span>
+                    <span class="cat-name">${cat.name}</span>
+                </button>`
             ).join('');
         }
 
