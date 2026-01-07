@@ -26,20 +26,42 @@
         .display {
             background: white;
             border-radius: 2vw;
-            padding: 2.5vw 3vw;
-            margin-bottom: 2vw;
+            padding: 2vw 3vw;
+            margin-bottom: 1.5vw;
             text-align: right;
             box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         }
         .amount {
-            font-size: clamp(24px, 7vw, 36px);
+            font-size: clamp(20px, 6vw, 32px);
             font-weight: bold;
             color: #333;
         }
         .amount::after {
             content: ' ฿';
-            font-size: clamp(14px, 4vw, 20px);
+            font-size: clamp(12px, 3.5vw, 18px);
             color: #888;
+        }
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1vw;
+            margin-bottom: 1.5vw;
+        }
+        .cat {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 2vw;
+            padding: 1.5vw;
+            font-size: clamp(16px, 5vw, 24px);
+            cursor: pointer;
+            text-align: center;
+        }
+        .cat.selected {
+            border-color: #06C755;
+            background: #e8f5e9;
+        }
+        .cat:active {
+            transform: scale(0.95);
         }
         .keypad {
             display: grid;
@@ -52,7 +74,7 @@
             background: white;
             border: none;
             border-radius: 2vw;
-            font-size: clamp(16px, 5vw, 24px);
+            font-size: clamp(14px, 4.5vw, 22px);
             font-weight: 500;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -69,9 +91,12 @@
             color: white;
         }
         .key.send {
-            background: #06C755;
+            background: #ccc;
             color: white;
             grid-row: span 2;
+        }
+        .key.send.ready {
+            background: #06C755;
         }
         .key:disabled {
             background: #ccc;
@@ -79,7 +104,7 @@
         .error {
             color: #ff6b6b;
             text-align: center;
-            font-size: clamp(10px, 3vw, 14px);
+            font-size: clamp(10px, 2.5vw, 14px);
             height: 4vw;
             display: flex;
             align-items: center;
@@ -92,6 +117,8 @@
         <div class="amount" id="amount">0</div>
     </div>
 
+    <div class="categories" id="categories"></div>
+
     <div class="keypad">
         <button class="key" onclick="append('7')">7</button>
         <button class="key" onclick="append('8')">8</button>
@@ -100,11 +127,11 @@
         <button class="key" onclick="append('4')">4</button>
         <button class="key" onclick="append('5')">5</button>
         <button class="key" onclick="append('6')">6</button>
-        <button class="key clear" onclick="clearAmount()">C</button>
+        <button class="key clear" onclick="clearAll()">C</button>
         <button class="key" onclick="append('1')">1</button>
         <button class="key" onclick="append('2')">2</button>
         <button class="key" onclick="append('3')">3</button>
-        <button class="key send" id="sendBtn" onclick="send()">Send</button>
+        <button class="key send" id="sendBtn" onclick="send()">OK</button>
         <button class="key" onclick="append('0')">0</button>
         <button class="key" onclick="append('00')">00</button>
         <button class="key" onclick="append('.')">.</button>
@@ -114,21 +141,61 @@
 
     <script>
         const LIFF_ID = "2008821815-lUW2FsbY";
+
+        const CATEGORIES = [
+            { emoji: "🍔", name: "Food" },
+            { emoji: "🐕", name: "Dog" },
+            { emoji: "👶", name: "Baby" },
+            { emoji: "🧹", name: "Daily Items" },
+            { emoji: "☕️", name: "Social" },
+            { emoji: "🚃", name: "Transportation" },
+            { emoji: "👕", name: "Clothing" },
+            { emoji: "🏥", name: "Health" },
+            { emoji: "🚙", name: "Car" },
+            { emoji: "🎁", name: "Gift" },
+            { emoji: "❗️", name: "Special" }
+        ];
+
         let amount = "0";
+        let selectedCategory = null;
 
         async function initLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) liff.login();
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                }
             } catch (error) {
                 showError("LIFF init error");
             }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categories');
+            container.innerHTML = CATEGORIES.map((cat, i) =>
+                `<button class="cat" onclick="selectCategory(${i})">${cat.emoji}</button>`
+            ).join('');
+        }
+
+        function selectCategory(index) {
+            selectedCategory = CATEGORIES[index];
+            document.querySelectorAll('.cat').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+            updateSendButton();
+        }
+
+        function updateSendButton() {
+            const btn = document.getElementById('sendBtn');
+            const ready = amount !== "0" && selectedCategory;
+            btn.classList.toggle('ready', ready);
         }
 
         function updateDisplay() {
             const parts = amount.split('.');
             parts[0] = Number(parts[0]).toLocaleString();
             document.getElementById('amount').textContent = parts.join('.');
+            updateSendButton();
         }
 
         function append(num) {
@@ -142,8 +209,10 @@
             updateDisplay();
         }
 
-        function clearAmount() {
+        function clearAll() {
             amount = "0";
+            selectedCategory = null;
+            document.querySelectorAll('.cat').forEach(el => el.classList.remove('selected'));
             updateDisplay();
         }
 
@@ -154,26 +223,35 @@
 
         async function send() {
             if (amount === "0") {
-                showError("Please enter an amount");
+                showError("Enter amount");
                 return;
             }
+            if (!selectedCategory) {
+                showError("Select category");
+                return;
+            }
+
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
             btn.textContent = "...";
 
             try {
                 if (!liff.isInClient()) {
-                    showError("Please open in LINE app");
+                    showError("Open in LINE app");
                     btn.disabled = false;
-                    btn.textContent = "Send";
+                    btn.textContent = "OK";
                     return;
                 }
-                await liff.sendMessages([{ type: "text", text: amount }]);
+
+                // Format: "amount|emoji name" (e.g., "1000|🍔 Food")
+                const message = `${amount}|${selectedCategory.emoji} ${selectedCategory.name}`;
+
+                await liff.sendMessages([{ type: "text", text: message }]);
                 liff.closeWindow();
             } catch (error) {
                 showError("Send error");
                 btn.disabled = false;
-                btn.textContent = "Send";
+                btn.textContent = "OK";
             }
         }
 
@@ -183,6 +261,7 @@
             setTimeout(() => el.textContent = '', 3000);
         }
 
+        renderCategories();
         initLiff();
     </script>
 </body>
